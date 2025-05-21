@@ -1,16 +1,14 @@
-#![allow(unused)]
-
-use axum::{Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use dotenv::dotenv;
+use sqlx::PgPool;
 use std::env;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 
-#[derive(Clone)]
-struct AppState {
-    db_pool: sqlx::PgPool,
-    jwt_secret: String,
-}
+mod auth;
+mod state;
+
+use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {
@@ -19,13 +17,13 @@ async fn main() {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
-    let db_pool = sqlx::PgPool::connect(&database_url)
+    let db_pool = PgPool::connect(&database_url)
         .await
         .expect("Failed to connect to the database");
 
     let state = AppState {
-        db_pool: db_pool,
-        jwt_secret: jwt_secret,
+        db_pool: db_pool.clone(),
+        jwt_secret: jwt_secret.clone(),
     };
 
     let cors = CorsLayer::new()
@@ -34,13 +32,17 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/api/health", get(|| async { "Ariel B Wang" }))
+        .route("/api/health", get(health_check_handler))
+        .nest("/auth", auth::handlers::auth_router())
         .with_state(state)
         .layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:3001").await.unwrap();
     println!("Listening on {}", listener.local_addr().unwrap());
 
     axum::serve(listener, app).await.unwrap();
 }
 
+async fn health_check_handler() -> impl IntoResponse {
+    "Ariel B Wang <3"
+}
