@@ -25,6 +25,7 @@ pub fn generate_token(
     Ok(token)
 }
 
+#[allow(unused)]
 pub fn verify_token(token: &str, jwt_secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let decoding_key = DecodingKey::from_secret(jwt_secret.as_ref());
     let validation = Validation::new(Algorithm::HS256);

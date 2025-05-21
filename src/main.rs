@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use std::env;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 
 mod auth;
 mod state;
@@ -33,9 +34,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/health", get(health_check_handler))
-        .nest("/auth", auth::handlers::auth_router())
+        .nest("/api/auth", auth::handlers::auth_router())
         .with_state(state)
-        .layer(cors);
+        .layer(cors)
+        .layer(TraceLayer::new_for_http());
 
     let listener = TcpListener::bind("0.0.0.0:3001").await.unwrap();
     println!("Listening on {}", listener.local_addr().unwrap());

@@ -35,6 +35,7 @@ pub async fn find_user_by_username(
     Ok(user)
 }
 
+#[allow(unused)]
 pub async fn find_user_by_id(db_pool: &PgPool, user_id: Uuid) -> Result<Option<User>, Error> {
     let user = sqlx::query_as!(
         User,
@@ -47,4 +48,18 @@ pub async fn find_user_by_id(db_pool: &PgPool, user_id: Uuid) -> Result<Option<U
     .await?;
 
     Ok(user)
+}
+
+#[allow(unused)]
+pub async fn delete_user(db_pool: &PgPool, user_id: Uuid) -> Result<bool, Error> {
+    let result = sqlx::query!(
+        r#"
+        DELETE FROM users WHERE id = $1
+        "#,
+        user_id
+    )
+    .execute(db_pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }

@@ -16,7 +16,9 @@ pub async fn register_handler(
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
     let db_pool = &state.db_pool;
-    let existing_user = db::find_user_by_username(db_pool, &payload.username).await;
+    let username = payload.username.clone();
+
+    let existing_user = db::find_user_by_username(db_pool, &username).await;
 
     match existing_user {
         Ok(Some(_)) => {
@@ -42,7 +44,6 @@ pub async fn register_handler(
     let hashed_password = match password::hash_password(payload.password.clone()).await {
         Ok(hash) => hash,
         Err(e) => {
-            // Error during password hashing
             eprintln!("Error hashing password: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -52,8 +53,16 @@ pub async fn register_handler(
         }
     };
 
+    println!("Axum Register: Creating user in database."); // Added log
     match db::create_user(db_pool, &payload.username, &hashed_password).await {
-        Ok(_) => StatusCode::CREATED.into_response(),
+        Ok(_) => {
+            println!("Axum Register: User created successfully."); // Added log
+            (
+                StatusCode::CREATED,
+                Json(json!({"message": "User registered successfully!"})),
+            )
+                .into_response()
+        }
         Err(e) => {
             eprintln!("Database error creating user: {}", e);
             (

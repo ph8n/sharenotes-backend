@@ -36,3 +36,9 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     pub token: String,
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AuthenticatedUser {
+    pub id: Uuid,
+    pub username: String,
+}
